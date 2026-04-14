@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Text Count</string>
+    <string name="texts_received">texts received</string>
+    <string name="target_count_label">Target Count</string>
+    <string name="target_count_description">Play tone after receiving this many texts</string>
+    <string name="enter_number">Enter number</string>
+    <string name="set">Set</string>
+    <string name="ringtone_label">Ringtone</string>
+    <string name="ringtone_description">Tone to play when target is reached</string>
+    <string name="default_ringtone">Default</string>
+    <string name="choose_ringtone">Choose Ringtone</string>
+    <string name="reset_count">Reset Count</string>
+</resources>
