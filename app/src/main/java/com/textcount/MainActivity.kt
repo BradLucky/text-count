@@ -8,11 +8,13 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.google.android.material.textfield.TextInputEditText
 
@@ -24,6 +26,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etTargetCount: TextInputEditText
     private lateinit var btnSetTarget: Button
     private lateinit var btnResetCount: Button
+    private lateinit var tvNotificationAccessStatus: TextView
+    private lateinit var btnGrantAccess: Button
 
     private val smsCountReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -32,17 +36,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val smsGranted = permissions[Manifest.permission.RECEIVE_SMS] == true
-        if (!smsGranted) {
-            Toast.makeText(
-                this,
-                "SMS permission is required to count incoming texts",
-                Toast.LENGTH_LONG
-            ).show()
-        }
-    }
+        ActivityResultContracts.RequestPermission()
+    ) { /* no-op */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +50,8 @@ class MainActivity : AppCompatActivity() {
         etTargetCount = findViewById(R.id.etTargetCount)
         btnSetTarget = findViewById(R.id.btnSetTarget)
         btnResetCount = findViewById(R.id.btnResetCount)
+        tvNotificationAccessStatus = findViewById(R.id.tvNotificationAccessStatus)
+        btnGrantAccess = findViewById(R.id.btnGrantAccess)
 
         etTargetCount.setText(prefs.targetCount.toString())
 
@@ -70,6 +67,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        btnGrantAccess.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        }
+
         btnResetCount.setOnClickListener {
             prefs.resetCount()
             updateCountDisplay()
@@ -77,14 +78,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateCountDisplay()
-        requestPermissions()
+        requestPostNotificationsPermission()
     }
 
     override fun onResume() {
         super.onResume()
-        val filter = IntentFilter(SmsReceiver.ACTION_SMS_COUNT_UPDATED)
+        val filter = IntentFilter(SmsNotificationListener.ACTION_SMS_COUNT_UPDATED)
         registerReceiver(smsCountReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         updateCountDisplay()
+        updateNotificationAccessDisplay()
     }
 
     override fun onPause() {
@@ -99,21 +101,20 @@ class MainActivity : AppCompatActivity() {
         tvTargetCount.text = "of $target"
     }
 
-    private fun requestPermissions() {
-        val permissions = mutableListOf(
-            Manifest.permission.RECEIVE_SMS,
-            Manifest.permission.READ_SMS
+    private fun updateNotificationAccessDisplay() {
+        val granted = NotificationManagerCompat.getEnabledListenerPackages(this).contains(packageName)
+        tvNotificationAccessStatus.text = getString(
+            if (granted) R.string.notification_access_granted else R.string.notification_access_not_granted
         )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
+        btnGrantAccess.isEnabled = !granted
+    }
 
-        val needed = permissions.filter {
-            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
-        }
-
-        if (needed.isNotEmpty()) {
-            requestPermissionLauncher.launch(needed.toTypedArray())
+    private fun requestPostNotificationsPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 }

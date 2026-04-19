@@ -7,4 +7,9 @@
     <string name="enter_number">Enter number</string>
     <string name="set">Set</string>
     <string name="reset_count">Reset Count</string>
+    <string name="notification_access_label">Notification Access</string>
+    <string name="notification_access_description">Required to detect incoming texts from your messaging app</string>
+    <string name="notification_access_granted">Granted</string>
+    <string name="notification_access_not_granted">Not granted — tap below to enable</string>
+    <string name="open_settings">Open Settings</string>
 </resources>
